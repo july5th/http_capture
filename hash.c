@@ -117,6 +117,7 @@ int hashAdd(void *key, void *data) {
 }
 
 void *hashDelete(void *key) {
+	//printf("hash : %d\n", hashTableEntries);
 	struct hashEntry *tmp, *tmp2;
 	void *data;
 	int bucket;

@@ -3,6 +3,7 @@
 
 #define int_ntoa(x)	inet_ntoa(*((struct in_addr *)&x))
 
-void output(struct stream *s);
+int output(struct stream *s);
+void output_init();
 
 #endif

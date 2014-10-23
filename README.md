@@ -3,7 +3,7 @@ HTTP Capture
 
 Compilation
 ----------------------------
-First install jansson.
+First install libjson-c.
    
 Then compile http_capture::
 
