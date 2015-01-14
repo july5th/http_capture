@@ -34,7 +34,7 @@ void nidsCallback(struct tcp_stream *ns, void **param) {
 
 		case NIDS_JUST_EST:
 			//if (ns->addr.dest != 80 && ns->addr.dest != 443) break;
-			if (ns->addr.dest != 80) break;
+			//if (ns->addr.dest != 80) break;
 			ns->client.collect++;
 			ns->server.collect++;
 			
@@ -91,7 +91,7 @@ static void hc_syslog(int type, int errnum, struct ip *iph, void *data) {
 
 int nidsRun(char *filter) {
 	nids_params.pcap_filter = filter;
-	//nids_params.n_tcp_streams = (MAX_CONNECTIONS * 2) / 3 + 1; /* libnids allows 3/4 * n simultaneous twin connections */
+	nids_params.n_tcp_streams = (MAX_CONNECTIONS * 2) / 3 + 1; /* libnids allows 3/4 * n simultaneous twin connections */
 
 	struct nids_chksum_ctl temp;
 	temp.netaddr = 0;
@@ -115,7 +115,13 @@ int nidsRun(char *filter) {
 	return (0);
 }
 
-int nidsDevice(char *dev, char *filter) {
+int nids_device(char *dev, char *filter) {
 	nids_params.device = dev;
 	return (nidsRun(filter));
 }
+
+int nids_file(char *filename, char *filter) {
+        nids_params.filename = filename;
+        return (nidsRun(filter));
+}
+

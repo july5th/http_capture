@@ -61,8 +61,11 @@ void output_init() {
 int output(struct stream *s)
 {
   char line[60000];
-
   time_t tt = time(NULL);
+  if(s->is_http == 0 && s->tmp == 1)
+	printf("is_http\n");
+  //if(s->is_http == 0)
+    //return 0;
   json_object_object_add(s->json, "time", json_object_new_int(tt));
 
   const char * tmp = json_object_to_json_string(s->json);
@@ -87,7 +90,7 @@ int output(struct stream *s)
   	}
   	return count;
   } else {
-  	printf("%s\n", tmp);
+  	printf("%ilfr%s\n", s->tmp, tmp);
 	return 1;
   }
 }

@@ -25,18 +25,23 @@ http_parser_settings request_settings;
 http_parser_settings response_settings;
 
 void streamOpen(struct stream *s, struct tuple4 *addr) {
-	char buffer[1024];
 	memset(s, 0, sizeof(struct stream));
 	memcpy(&(s->addr), addr, sizeof(struct tuple4));
+	streamClean(s);
+	s->tmp = 0;
+}
+
+
+void streamClean(struct stream *s) {
+	char buffer[1024];
 	http_parser_init(&(s->request_parser), HTTP_REQUEST);
 	http_parser_init(&(s->response_parser), HTTP_RESPONSE);
-
+        s->is_http = 0;
 	s->json = json_object_new_object();
-	sprintf(buffer, "%s:%i", int_ntoa(addr->saddr), addr->source);
+	sprintf(buffer, "%s:%i", int_ntoa(s->addr.saddr), s->addr.source);
 	json_object_object_add(s->json, "src", json_object_new_string(buffer));
-	sprintf(buffer, "%s:%i", int_ntoa(addr->daddr), addr->dest);
+	sprintf(buffer, "%s:%i", int_ntoa(s->addr.daddr), s->addr.dest);
 	json_object_object_add(s->json, "dst", json_object_new_string(buffer));
-	
 }
 
 void streamWriteRequest(struct stream *s, char *data, u_int32_t size) {
@@ -71,6 +76,7 @@ int on_url(http_parser* _, const char* at, size_t length) {
   //  printf("%s\n", stream->url);
   //  exit(1);
   //}
+  stream->is_http = 1;
   json_object_object_add(stream->json, "method", json_object_new_string(http_method_str(stream->request_parser.method)));
   json_object_object_add(stream->json, "url", json_object_new_string(stream->url));
   return 0;
@@ -85,13 +91,16 @@ int on_header_field(http_parser* _, const char* at, size_t length) {
 	|| (!strncmp(at, "Host", 4)) 
 	|| (!strncmp(at, "User-Agent", 10))
 	|| (!strncmp(at, "Cookie", 6))
+	|| (!strncmp(at, "X-Forwarded-For", 15))
 	) {
     memcpy(&(stream->cache), at, real_length);
     stream->cache[real_length] = '\0';
     for(i = 0; i < real_length; i++)
         stream->cache[i] = tolower(stream->cache[i]);
   } else {
-    stream->cache[0] = '\0';
+    //stream->cache[0] = '\0';
+    memcpy(&(stream->cache), at, real_length);
+    stream->cache[real_length] = '\0';
   }
   return 0;
 }
@@ -126,6 +135,17 @@ int on_body(http_parser* _, const char* at, size_t length) {
   return 0;
 }
 
+int session_over(http_parser* _) {
+  	_--;
+  	struct stream* stream = (struct stream*)_;
+	if(stream->tmp == 1)
+		printf("hahahaha\n");
+	stream->tmp += 1;
+	streamClose(stream);
+	streamClean(stream);
+	return 0;
+}
+
 void streamInit() {
 	streamCount = 0;
 
@@ -135,9 +155,12 @@ void streamInit() {
 	request_settings.on_url = on_url;
 	request_settings.on_header_field = on_header_field;
 	request_settings.on_header_value = on_header_value;
+
 	if (catch_request_body != 0)
 		request_settings.on_body = on_body;
+
 	response_settings.on_status = on_status;
+	response_settings.on_message_complete = session_over;
 }
 
 void streamDelete(struct tuple4 *addr) {

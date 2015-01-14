@@ -5,18 +5,20 @@
  */
 
 #include <stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<fcntl.h>
-#include<sys/types.h>
-#include<unistd.h>
-#include<sys/wait.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
+#include <getopt.h>
 
+#include "main.h"
 #include "config.h"
 #include "nids.h"
 
-void mainHelp(char *name) {
+void usage(char *name) {
 	printf(
 		"\n"
 		"Usage: %s [<options>] <name> [<filter>]\n"
@@ -57,77 +59,78 @@ void to_daemon() {
 }
 
 int main(int argc, char **argv) {
-	int i, j, result, filterSize = 1;
-	char *name = NULL, *filter = NULL;
+	char device_or_pcap_name[1024];
 
-	int ifd = 0;
-	
 	/* set defaults */
+	int run_mode = MODE_DEVICE;
+	int daemon = 0;
 	debug = 1;
 	catch_request_body = 0;
 	redis_output = 1;
 
-	/* parse arguments */
-	if (argc < 2)
-		mainHelp(argv[0]);
-	
-	for (i = 1; i < argc; i++) {
-		if (argv[i][0] == '-') {
-			for (j = 1; j < strlen(argv[i]); j++) {
-				switch (argv[i][j]) {
-					case 'h':
-						mainHelp(argv[0]);
-						break;
-	
-					case 'b':
-						catch_request_body = 1;
-						break;
+        int result;
+        int arg_options;
+        const char *short_options = "f:i:bdpvqh";
+	char filter_string[256] = " ";
 
-					case 'd':
-						ifd = 1;
-						break;
-					case 'p':
-						redis_output = 0;
-						break;
+        const struct option long_options[] = {
+                {"pcap-file", required_argument, NULL, 'f'},
+                {"interface", required_argument, NULL, 'i'},
+                {"print-request-body", required_argument, NULL, 'b'},
+                {"dameo", required_argument, NULL, 'd'},
+                {"print", required_argument, NULL, 'p'},
+                {"verbose", required_argument, NULL, 'v'},
+                {"quite", required_argument, NULL, 'q'},
+                {"help", no_argument, NULL, 'h'},
+                {NULL, 0, NULL, 0}
+        };
 
-					case 'i':
-						break;
+        while ((arg_options =
+                        getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
 
-					case 'q':
-						if (debug > 0) debug--;
-						break;
+                switch (arg_options) {
 
-					case 'v':
-						debug++;
-						break;
-	
-					default:
-						printf("FATAL: Invalid option: %s\n", argv[i]);
-						mainHelp(argv[0]);
-						break;
-				}
-			}
-		} else {
-			if (!name) {
-				name = argv[i];
-			} else {
-				filterSize += strlen(argv[i]) + 1;
-				filter = realloc(filter, filterSize);
-				if (!filter) {
-					perror("malloc()");
-					exit(EXIT_FAILURE);
-				}
-				strcat(filter, argv[i]);
-				strcat(filter, " ");
-			}
-		}
+                case 'f':
+			strcpy(device_or_pcap_name, optarg);
+			run_mode = MODE_PCAP;
+                        break;
+                case 'i':
+			strcpy(device_or_pcap_name, optarg);
+			run_mode = MODE_DEVICE;
+                        break;
+                case 'b':
+			catch_request_body = 1;
+                        break;
+                case 'd':
+                        daemon = 1;
+                        break;
+                case 'p':
+                        redis_output = 0;
+                        break;
+                case 'v':
+                        debug++;
+                        break;
+                case 'q':
+                        if (debug > 0) debug--;;
+                        break;
+                case 'h':
+                        usage(argv[0]);
+                        return 0;
+                        break;
+
+                default:
+                        printf("CMD line Options Error\n\n");
+                        break;
+                }
 	}
 
-	if (ifd != 0)
-		to_daemon();
-	if (debug > 0) printf("Trying to read from device '%s'...\n", name);
+	if (daemon != 0) to_daemon();
+	if (debug > 0) printf("Trying to read from '%s'...\n", device_or_pcap_name);
 		
-	result = nidsDevice(name, filter);
+	if(run_mode == MODE_DEVICE)
+		result = nids_device(device_or_pcap_name, filter_string);
+	else if(run_mode == MODE_PCAP)
+		result = nids_file(device_or_pcap_name, filter_string);
 		
 	if (result) {
 		if (debug > 0) printf("Failed.\n");

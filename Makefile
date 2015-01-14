@@ -2,7 +2,7 @@ CC=gcc
 COPT=-Wall -g
 
 all: main.o nids.o hash.o stream.o http_parser.o output.o
-	$(CC) $(COPT) -o http_capture main.o nids.o hash.o stream.o http_parser.o output.o -lnids -lpcap -lglib-2.0 -lgthread-2.0 -lpthread -ljson-c
+	$(CC) $(COPT) -o http_capture main.o nids.o hash.o stream.o http_parser.o output.o -lnids -lpcap -lpthread -ljson
 
 nids.o: nids.c nids.h
 	$(CC) $(COPT) -c nids.c

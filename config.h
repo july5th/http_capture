@@ -7,7 +7,7 @@
 #define PACKET_MAXSIZE 0x10000	/* maximum total raw packet size */
 #define RESOURCE_MAXSIZE 0x400	/* maximum size for http resource identifier */
 #define CONNECTION_BUCKETS 8000	/* number of buckets in connection hash table */
-#define MAX_CONNECTIONS 65535	/* maximum number of simultaneous connections */
+#define MAX_CONNECTIONS 655350	/* maximum number of simultaneous connections */
 
 #define URL_MAXSIZE 1024
 #define HEADER_MAXSIZE 2048
@@ -25,7 +25,7 @@ int debug;			/* debugging level */
 int catch_request_body;
 int redis_output;
 
-#define REDIS_HOST "10.10.40.72"
+#define REDIS_HOST "172.17.81.123"
 #define REDIS_PORT 6379
 
 #endif
