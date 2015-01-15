@@ -138,8 +138,6 @@ int on_body(http_parser* _, const char* at, size_t length) {
 int session_over(http_parser* _) {
   	_--;
   	struct stream* stream = (struct stream*)_;
-	if(stream->tmp == 1)
-		printf("hahahaha\n");
 	stream->tmp += 1;
 	streamClose(stream);
 	streamClean(stream);
