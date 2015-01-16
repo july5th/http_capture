@@ -146,10 +146,10 @@ int on_body(http_parser* _, const char* at, size_t length) {
   	stream->data[length] = '\0';
 	if (base64_output == 1) {
 		t = Base64Encode(stream->data, length);
-  		json_object_object_add(stream->json, "data", json_object_new_string(t));
+  		json_object_object_add(stream->json, "request_data", json_object_new_string(t));
 		free(t);
 	} else {
-  		json_object_object_add(stream->json, "data", json_object_new_string(stream->data));
+  		json_object_object_add(stream->json, "request_data", json_object_new_string(stream->data));
 	}
   }
   return 0;
