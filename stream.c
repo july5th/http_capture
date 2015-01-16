@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include <nids.h>
 
+#include "base64.h"
 #include "config.h"
 #include "http_parser.h"
 #include "stream.h"
@@ -127,10 +128,17 @@ int on_status(http_parser* _, const char* at, size_t length) {
 
 int on_body(http_parser* _, const char* at, size_t length) {
   struct stream* stream = (struct stream*)_;
+  char *t;
   if (DATA_MAXSIZE > length) {
   	memcpy(&(stream->data), at, length);
   	stream->data[length] = '\0';
-  	json_object_object_add(stream->json, "data", json_object_new_string(stream->data));
+	if (body_base64_output == 1) {
+		t = Base64Encode(stream->data, length);
+  		json_object_object_add(stream->json, "data", json_object_new_string(t));
+		free(t);
+	} else {
+  		json_object_object_add(stream->json, "data", json_object_new_string(stream->data));
+	}
   }
   return 0;
 }

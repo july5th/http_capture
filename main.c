@@ -25,7 +25,9 @@ void usage(char *name) {
 		"\n"
 		"Where <options> are:\n"
 		"	-i	force <name> to be treated as network interface\n"
+		"	-f	pcap file name\n"
 		"	-b	catch request body\n"
+		"	-r	not use base64 format\n"
 		"	-d	run as dameo\n"
 		"	-p	print ouput to screen instead of redis\n"
 		"\n"
@@ -67,10 +69,11 @@ int main(int argc, char **argv) {
 	debug = 1;
 	catch_request_body = 0;
 	redis_output = 1;
+	body_base64_output = 1;
 
         int result;
         int arg_options;
-        const char *short_options = "f:i:bdpvqh";
+        const char *short_options = "f:i:brdpvqh";
 	char filter_string[256] = " ";
 
         const struct option long_options[] = {
@@ -100,6 +103,9 @@ int main(int argc, char **argv) {
                         break;
                 case 'b':
 			catch_request_body = 1;
+                        break;
+                case 'r':
+			body_base64_output = 0;
                         break;
                 case 'd':
                         daemon = 1;
