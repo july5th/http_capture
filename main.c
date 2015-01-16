@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 	debug = 1;
 	catch_request_body = 0;
 	redis_output = 1;
-	body_base64_output = 0;
+	base64_output = 0;
 	print_all_request_header = 0;
 
         int result;
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 			catch_request_body = 1;
                         break;
                 case 'r':
-			body_base64_output = 1;
+			base64_output = 1;
                         break;
                 case 'd':
                         daemon = 1;

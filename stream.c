@@ -69,17 +69,20 @@ void streamClose(struct stream *s) {
 }
 
 int on_url(http_parser* _, const char* at, size_t length) {
+  char *t;
   struct stream* stream = (struct stream*)_;
   size_t real_length = URL_MAXSIZE > length ? length : URL_MAXSIZE;
   memcpy(&(stream->url), at, real_length);
   stream->url[real_length] = '\0';
-  //if(stream->url[0] != '/') {
-  //  printf("%s\n", stream->url);
-  //  exit(1);
-  //}
   stream->is_http = 1;
   json_object_object_add(stream->json, "method", json_object_new_string(http_method_str(stream->request_parser.method)));
-  json_object_object_add(stream->json, "url", json_object_new_string(stream->url));
+  if (base64_output == 1) {
+    t = Base64Encode(stream->url, real_length);
+    json_object_object_add(stream->json, "url", json_object_new_string(t));
+    free(t);
+  } else {
+    json_object_object_add(stream->json, "url", json_object_new_string(stream->url));
+  }
   return 0;
 }
 
@@ -110,13 +113,19 @@ int on_header_field(http_parser* _, const char* at, size_t length) {
 }
 
 int on_header_value(http_parser* _, const char* at, size_t length) {
-  char value[1024];
-  size_t real_length = 1024 > length ? length : 1024;
+  char value[HEADER_MAXSIZE], *t;
+  size_t real_length = HEADER_MAXSIZE > length ? length : HEADER_MAXSIZE;
   struct stream* stream = (struct stream*)_;
   if(stream->cache[0] == '\0') return 0;
   memcpy(&value, at, real_length);
   value[real_length] = '\0';
-  json_object_object_add(stream->json, stream->cache, json_object_new_string(value));
+  if (base64_output == 1) {
+    t = Base64Encode(value, real_length);
+    json_object_object_add(stream->json, stream->cache, json_object_new_string(t));
+    free(t);
+  } else {
+    json_object_object_add(stream->json, stream->cache, json_object_new_string(value));
+  }
 
   return 0;
 }
@@ -135,7 +144,7 @@ int on_body(http_parser* _, const char* at, size_t length) {
   if (DATA_MAXSIZE > length) {
   	memcpy(&(stream->data), at, length);
   	stream->data[length] = '\0';
-	if (body_base64_output == 1) {
+	if (base64_output == 1) {
 		t = Base64Encode(stream->data, length);
   		json_object_object_add(stream->json, "data", json_object_new_string(t));
 		free(t);

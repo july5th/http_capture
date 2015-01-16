@@ -21,7 +21,7 @@ int debug;			/* debugging level */
 
 int catch_request_body;
 int redis_output;
-int body_base64_output;
+int base64_output;
 int print_all_request_header;
 
 #define REDIS_HOST "172.17.81.123"
