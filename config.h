@@ -9,22 +9,20 @@
 #define CONNECTION_BUCKETS 8000	/* number of buckets in connection hash table */
 #define MAX_CONNECTIONS 655350	/* maximum number of simultaneous connections */
 
-#define URL_MAXSIZE 1024
-#define HEADER_MAXSIZE 2048
-#define DATA_MAXSIZE 4096
+#define URL_MAXSIZE 2048
+#define HEADER_MAXSIZE 4096
+#define DATA_MAXSIZE 8192
 
 /* string definitions */
 #define HTTP_INDEXFILE "index.html"
 
 /* global settings defined at runtime */
 int debug;			/* debugging level */
-//static int url_maxsize = 1024;
-//static int header_maxsize = 2048;
-//static int data_maxsize = 4096;
 
 int catch_request_body;
 int redis_output;
 int body_base64_output;
+int print_all_request_header;
 
 #define REDIS_HOST "172.17.81.123"
 #define REDIS_PORT 6379

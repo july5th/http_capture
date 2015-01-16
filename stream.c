@@ -99,9 +99,12 @@ int on_header_field(http_parser* _, const char* at, size_t length) {
     for(i = 0; i < real_length; i++)
         stream->cache[i] = tolower(stream->cache[i]);
   } else {
-    //stream->cache[0] = '\0';
-    memcpy(&(stream->cache), at, real_length);
-    stream->cache[real_length] = '\0';
+    if(print_all_request_header == 1) {
+      memcpy(&(stream->cache), at, real_length);
+      stream->cache[real_length] = '\0';
+    } else {
+      stream->cache[0] = '\0';
+    }
   }
   return 0;
 }

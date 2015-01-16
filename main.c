@@ -26,8 +26,9 @@ void usage(char *name) {
 		"Where <options> are:\n"
 		"	-i	force <name> to be treated as network interface\n"
 		"	-f	pcap file name\n"
+		"	-a	catch all request header\n"
 		"	-b	catch request body\n"
-		"	-r	not use base64 format\n"
+		"	-r	use base64 format\n"
 		"	-d	run as dameo\n"
 		"	-p	print ouput to screen instead of redis\n"
 		"\n"
@@ -69,11 +70,12 @@ int main(int argc, char **argv) {
 	debug = 1;
 	catch_request_body = 0;
 	redis_output = 1;
-	body_base64_output = 1;
+	body_base64_output = 0;
+	print_all_request_header = 0;
 
         int result;
         int arg_options;
-        const char *short_options = "f:i:brdpvqh";
+        const char *short_options = "f:i:abrdpvqh";
 	char filter_string[256] = " ";
 
         const struct option long_options[] = {
@@ -101,11 +103,14 @@ int main(int argc, char **argv) {
 			strcpy(device_or_pcap_name, optarg);
 			run_mode = MODE_DEVICE;
                         break;
+                case 'a':
+			print_all_request_header = 1;
+                        break;
                 case 'b':
 			catch_request_body = 1;
                         break;
                 case 'r':
-			body_base64_output = 0;
+			body_base64_output = 1;
                         break;
                 case 'd':
                         daemon = 1;
