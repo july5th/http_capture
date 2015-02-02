@@ -10,8 +10,11 @@
 #define MAX_CONNECTIONS 655350	/* maximum number of simultaneous connections */
 
 #define URL_MAXSIZE 2048
-#define HEADER_MAXSIZE 4096
-#define DATA_MAXSIZE 8192
+
+#define RESPONSE_HEADER_MAXSIZE 2048
+#define REQUEST_HEADER_MAXSIZE 4096
+#define REQUEST_DATA_MAXSIZE 2048
+#define RESPONSE_DATA_MAXSIZE 4096
 
 /* string definitions */
 #define HTTP_INDEXFILE "index.html"
@@ -20,6 +23,7 @@
 int debug;			/* debugging level */
 
 int catch_request_body;
+int catch_response_body;
 int redis_output;
 int base64_output;
 int print_all_request_header;

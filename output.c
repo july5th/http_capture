@@ -76,7 +76,7 @@ int output(struct stream *s)
             "$%u\r\n%s\r\n"
             "$%u\r\n%s\r\n"
             ,
-            (unsigned)strlen("diao_input_queue"), "diao_input_queue",
+            (unsigned)strlen("sec_input_queue"), "sec_input_queue",
             (unsigned)strlen(tmp), tmp
             );
 

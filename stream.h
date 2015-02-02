@@ -15,9 +15,11 @@ struct stream {
 	//request url
 	char url[URL_MAXSIZE + 1];
 	//request header key value
-	char cache[HEADER_MAXSIZE + 1];
+	char request_cache[REQUEST_HEADER_MAXSIZE + 1];
+	char response_cache[REQUEST_HEADER_MAXSIZE + 1];
         //request post data
-	char data[DATA_MAXSIZE + 1];
+	char request_data[REQUEST_DATA_MAXSIZE + 1];
+	char response_data[RESPONSE_DATA_MAXSIZE + 1];
 	struct tuple4 addr;
         int is_http;
         int tmp;

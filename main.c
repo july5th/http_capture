@@ -28,6 +28,7 @@ void usage(char *name) {
 		"	-f	pcap file name\n"
 		"	-a	catch all request header\n"
 		"	-b	catch request body\n"
+		"	-B	catch response body\n"
 		"	-r	use base64 format\n"
 		"	-d	run as dameo\n"
 		"	-p	print ouput to screen instead of redis\n"
@@ -75,13 +76,14 @@ int main(int argc, char **argv) {
 
         int result;
         int arg_options;
-        const char *short_options = "f:i:abrdpvqh";
+        const char *short_options = "f:i:abBrdpvqh";
 	char filter_string[256] = " ";
 
         const struct option long_options[] = {
                 {"pcap-file", required_argument, NULL, 'f'},
                 {"interface", required_argument, NULL, 'i'},
                 {"print-request-body", required_argument, NULL, 'b'},
+                {"print-response-body", required_argument, NULL, 'B'},
                 {"dameo", required_argument, NULL, 'd'},
                 {"print", required_argument, NULL, 'p'},
                 {"verbose", required_argument, NULL, 'v'},
@@ -108,6 +110,9 @@ int main(int argc, char **argv) {
                         break;
                 case 'b':
 			catch_request_body = 1;
+                        break;
+                case 'B':
+			catch_response_body = 1;
                         break;
                 case 'r':
 			base64_output = 1;

@@ -86,9 +86,9 @@ int on_url(http_parser* _, const char* at, size_t length) {
   return 0;
 }
 
-int on_header_field(http_parser* _, const char* at, size_t length) {
+int on_request_header_field(http_parser* _, const char* at, size_t length) {
   struct stream* stream = (struct stream*)_;
-  size_t real_length = HEADER_MAXSIZE > length ? length : URL_MAXSIZE;
+  size_t real_length = REQUEST_HEADER_MAXSIZE > length ? length : REQUEST_HEADER_MAXSIZE;
   int i;
  
   if ((!strncmp(at, "Referer", 7)) 
@@ -97,36 +97,77 @@ int on_header_field(http_parser* _, const char* at, size_t length) {
 	|| (!strncmp(at, "Cookie", 6))
 	|| (!strncmp(at, "X-Forwarded-For", 15))
 	) {
-    memcpy(&(stream->cache), at, real_length);
-    stream->cache[real_length] = '\0';
+    memcpy(&(stream->request_cache), at, real_length);
+    stream->request_cache[real_length] = '\0';
     for(i = 0; i < real_length; i++)
-        stream->cache[i] = tolower(stream->cache[i]);
+        stream->request_cache[i] = tolower(stream->request_cache[i]);
   } else {
     if(print_all_request_header == 1) {
-      memcpy(&(stream->cache), at, real_length);
-      stream->cache[real_length] = '\0';
+      memcpy(&(stream->request_cache), at, real_length);
+      stream->request_cache[real_length] = '\0';
     } else {
-      stream->cache[0] = '\0';
+      stream->request_cache[0] = '\0';
     }
   }
   return 0;
 }
 
-int on_header_value(http_parser* _, const char* at, size_t length) {
-  char value[HEADER_MAXSIZE], *t;
-  size_t real_length = HEADER_MAXSIZE > length ? length : HEADER_MAXSIZE;
+int on_request_header_value(http_parser* _, const char* at, size_t length) {
+  char value[REQUEST_HEADER_MAXSIZE], *t;
+  size_t real_length = REQUEST_HEADER_MAXSIZE > length ? length : REQUEST_HEADER_MAXSIZE;
   struct stream* stream = (struct stream*)_;
-  if(stream->cache[0] == '\0') return 0;
+  if(stream->request_cache[0] == '\0') return 0;
   memcpy(&value, at, real_length);
   value[real_length] = '\0';
   if (base64_output == 1) {
     t = Base64Encode(value, real_length);
-    json_object_object_add(stream->json, stream->cache, json_object_new_string(t));
+    json_object_object_add(stream->json, stream->request_cache, json_object_new_string(t));
     free(t);
   } else {
-    json_object_object_add(stream->json, stream->cache, json_object_new_string(value));
+    json_object_object_add(stream->json, stream->request_cache, json_object_new_string(value));
   }
 
+  return 0;
+}
+
+
+int on_response_header_field(http_parser* _, const char* at, size_t length) {
+  _--;
+  struct stream* stream = (struct stream*)_;
+  size_t real_length = RESPONSE_HEADER_MAXSIZE > length ? length : RESPONSE_HEADER_MAXSIZE;
+  int i;
+ 
+  if (!strncmp(at, "Location", 8)) {
+    memcpy(&(stream->response_cache), at, real_length);
+    stream->response_cache[real_length] = '\0';
+    for(i = 0; i < real_length; i++)
+        stream->response_cache[i] = tolower(stream->response_cache[i]);
+  } else {
+    if(print_all_request_header == 1) {
+      memcpy(&(stream->response_cache), at, real_length);
+      stream->response_cache[real_length] = '\0';
+    } else {
+      stream->response_cache[0] = '\0';
+    }
+  }
+  return 0;
+}
+
+int on_response_header_value(http_parser* _, const char* at, size_t length) {
+  _--;
+  char value[RESPONSE_HEADER_MAXSIZE], *t;
+  size_t real_length = RESPONSE_HEADER_MAXSIZE > length ? length : RESPONSE_HEADER_MAXSIZE;
+  struct stream* stream = (struct stream*)_;
+  if(stream->response_cache[0] == '\0') return 0;
+  memcpy(&value, at, real_length);
+  value[real_length] = '\0';
+  if (base64_output == 1) {
+    t = Base64Encode(value, real_length);
+    json_object_object_add(stream->json, stream->response_cache, json_object_new_string(t));
+    free(t);
+  } else {
+    json_object_object_add(stream->json, stream->response_cache, json_object_new_string(value));
+  }
   return 0;
 }
 
@@ -134,22 +175,39 @@ int on_status(http_parser* _, const char* at, size_t length) {
   _--;
   struct stream* stream = (struct stream*)_;
   json_object_object_add(stream->json, "code", json_object_new_int(stream->response_parser.status_code));
-  //streamDelete(&(stream->addr));
   return 0;
 }
 
-int on_body(http_parser* _, const char* at, size_t length) {
+int on_request_body(http_parser* _, const char* at, size_t length) {
   struct stream* stream = (struct stream*)_;
   char *t;
-  if (DATA_MAXSIZE > length) {
-  	memcpy(&(stream->data), at, length);
-  	stream->data[length] = '\0';
+  if (REQUEST_DATA_MAXSIZE > length) {
+  	memcpy(&(stream->request_data), at, length);
+  	stream->request_data[length] = '\0';
 	if (base64_output == 1) {
-		t = Base64Encode(stream->data, length);
+		t = Base64Encode(stream->request_data, length);
   		json_object_object_add(stream->json, "request_data", json_object_new_string(t));
 		free(t);
 	} else {
-  		json_object_object_add(stream->json, "request_data", json_object_new_string(stream->data));
+  		json_object_object_add(stream->json, "request_data", json_object_new_string(stream->request_data));
+	}
+  }
+  return 0;
+}
+
+int on_response_body(http_parser* _, const char* at, size_t length) {
+  _--;
+  struct stream* stream = (struct stream*)_;
+  char *t;
+  if (RESPONSE_DATA_MAXSIZE > length) {
+  	memcpy(&(stream->response_data), at, length);
+  	stream->response_data[length] = '\0';
+	if (base64_output == 1) {
+		t = Base64Encode(stream->response_data, length);
+  		json_object_object_add(stream->json, "response_data", json_object_new_string(t));
+		free(t);
+	} else {
+  		json_object_object_add(stream->json, "response_data", json_object_new_string(stream->response_data));
 	}
   }
   return 0;
@@ -171,13 +229,19 @@ void streamInit() {
   	memset(&response_settings, 0, sizeof(response_settings));
 
 	request_settings.on_url = on_url;
-	request_settings.on_header_field = on_header_field;
-	request_settings.on_header_value = on_header_value;
+	request_settings.on_header_field = on_request_header_field;
+	request_settings.on_header_value = on_request_header_value;
 
 	if (catch_request_body != 0)
-		request_settings.on_body = on_body;
+		request_settings.on_body = on_request_body;
+
+	if (catch_response_body != 0)
+		response_settings.on_body = on_response_body;
 
 	response_settings.on_status = on_status;
+	response_settings.on_header_field = on_response_header_field;
+	response_settings.on_header_value = on_response_header_value;
+
 	response_settings.on_message_complete = session_over;
 }
 
