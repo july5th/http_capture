@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <nids.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "base64.h"
 #include "config.h"
@@ -38,6 +40,8 @@ void streamClean(struct stream *s) {
 	http_parser_init(&(s->request_parser), HTTP_REQUEST);
 	http_parser_init(&(s->response_parser), HTTP_RESPONSE);
         s->is_http = 0;
+        s->request_data_size = 0;
+        s->response_data_size = 0;
 	s->json = json_object_new_object();
 	sprintf(buffer, "%s:%i", int_ntoa(s->addr.saddr), s->addr.source);
 	json_object_object_add(s->json, "src", json_object_new_string(buffer));
@@ -63,9 +67,37 @@ void streamWriteResponse(struct stream *s, char *data, u_int32_t size) {
 	
 }
 
+void prepare_output(struct stream *s) {
+  char *t;
+  // request_data
+  if (s->request_data_size > 0) {
+    s->request_data[s->request_data_size] = '\0';
+    if (base64_output == 1) {
+      t = Base64Encode(s->request_data, s->request_data_size);
+      json_object_object_add(s->json, "request.body", json_object_new_string(t));
+      free(t);
+    } else {
+      json_object_object_add(s->json, "request.body", json_object_new_string(s->request_data));
+    }
+  }
+  // response_data
+  if (s->response_data_size > 0) {
+    s->response_data[s->response_data_size] = '\0';
+    if (base64_output == 1) {
+      t = Base64Encode(s->response_data, s->response_data_size);
+      json_object_object_add(s->json, "response.body", json_object_new_string(t));
+      free(t);
+    } else {
+      json_object_object_add(s->json, "response.body", json_object_new_string(s->response_data));
+    }
+  }
+}
+
+
 void streamClose(struct stream *s) {
-	output(s);
-	json_object_put(s->json);
+  prepare_output(s);
+  output(s);
+  json_object_put(s->json);
 }
 
 int on_url(http_parser* _, const char* at, size_t length) {
@@ -75,13 +107,13 @@ int on_url(http_parser* _, const char* at, size_t length) {
   memcpy(&(stream->url), at, real_length);
   stream->url[real_length] = '\0';
   stream->is_http = 1;
-  json_object_object_add(stream->json, "method", json_object_new_string(http_method_str(stream->request_parser.method)));
-  if (base64_output == 1) {
+  json_object_object_add(stream->json, "request.method", json_object_new_string(http_method_str(stream->request_parser.method)));
+  if (base64_output == 1 && test == 0) {
     t = Base64Encode(stream->url, real_length);
-    json_object_object_add(stream->json, "url", json_object_new_string(t));
+    json_object_object_add(stream->json, "request.url", json_object_new_string(t));
     free(t);
   } else {
-    json_object_object_add(stream->json, "url", json_object_new_string(stream->url));
+    json_object_object_add(stream->json, "request.url", json_object_new_string(stream->url));
   }
   return 0;
 }
@@ -91,23 +123,20 @@ int on_request_header_field(http_parser* _, const char* at, size_t length) {
   size_t real_length = REQUEST_HEADER_MAXSIZE > length ? length : REQUEST_HEADER_MAXSIZE;
   int i;
  
-  if ((!strncmp(at, "Referer", 7)) 
+  if ((print_all_request_header == 1)
+	|| (!strncmp(at, "Referer", 7)) 
 	|| (!strncmp(at, "Host", 4)) 
 	|| (!strncmp(at, "User-Agent", 10))
 	|| (!strncmp(at, "Cookie", 6))
 	|| (!strncmp(at, "X-Forwarded-For", 15))
 	) {
-    memcpy(&(stream->request_cache), at, real_length);
-    stream->request_cache[real_length] = '\0';
-    for(i = 0; i < real_length; i++)
+    memcpy(&(stream->request_cache), "request.", 8);
+    memcpy(&(stream->request_cache[8]), at, real_length);
+    stream->request_cache[real_length + 8] = '\0';
+    for(i = 0; i < real_length + 8; i++)
         stream->request_cache[i] = tolower(stream->request_cache[i]);
   } else {
-    if(print_all_request_header == 1) {
-      memcpy(&(stream->request_cache), at, real_length);
-      stream->request_cache[real_length] = '\0';
-    } else {
-      stream->request_cache[0] = '\0';
-    }
+    stream->request_cache[0] = '\0';
   }
   return 0;
 }
@@ -136,19 +165,18 @@ int on_response_header_field(http_parser* _, const char* at, size_t length) {
   struct stream* stream = (struct stream*)_;
   size_t real_length = RESPONSE_HEADER_MAXSIZE > length ? length : RESPONSE_HEADER_MAXSIZE;
   int i;
- 
-  if (!strncmp(at, "Location", 8)) {
-    memcpy(&(stream->response_cache), at, real_length);
-    stream->response_cache[real_length] = '\0';
-    for(i = 0; i < real_length; i++)
+
+  if ((print_all_request_header == 1)
+	|| (!strncmp(at, "Content-Encoding", 16)) 
+	|| (!strncmp(at, "X-Forwarded-For", 15)) 
+	|| (!strncmp(at, "Location", 8))) {
+    memcpy(&(stream->response_cache), "response.", 9);
+    memcpy(&(stream->response_cache[9]), at, real_length);
+    stream->response_cache[real_length + 9] = '\0';
+    for(i = 0; i < real_length + 10; i++)
         stream->response_cache[i] = tolower(stream->response_cache[i]);
   } else {
-    if(print_all_request_header == 1) {
-      memcpy(&(stream->response_cache), at, real_length);
-      stream->response_cache[real_length] = '\0';
-    } else {
-      stream->response_cache[0] = '\0';
-    }
+    stream->response_cache[0] = '\0';
   }
   return 0;
 }
@@ -174,23 +202,18 @@ int on_response_header_value(http_parser* _, const char* at, size_t length) {
 int on_status(http_parser* _, const char* at, size_t length) {
   _--;
   struct stream* stream = (struct stream*)_;
-  json_object_object_add(stream->json, "code", json_object_new_int(stream->response_parser.status_code));
+  json_object_object_add(stream->json, "response.code", json_object_new_int(stream->response_parser.status_code));
   return 0;
 }
 
 int on_request_body(http_parser* _, const char* at, size_t length) {
   struct stream* stream = (struct stream*)_;
-  char *t;
-  if (REQUEST_DATA_MAXSIZE > length) {
-  	memcpy(&(stream->request_data), at, length);
-  	stream->request_data[length] = '\0';
-	if (base64_output == 1) {
-		t = Base64Encode(stream->request_data, length);
-  		json_object_object_add(stream->json, "request_data", json_object_new_string(t));
-		free(t);
-	} else {
-  		json_object_object_add(stream->json, "request_data", json_object_new_string(stream->request_data));
-	}
+  int real_length;
+  if (REQUEST_DATA_MAXSIZE > stream->request_data_size) {
+        real_length = REQUEST_DATA_MAXSIZE > (stream->request_data_size + length) ? \
+		length : (REQUEST_DATA_MAXSIZE - stream->request_data_size);
+  	memcpy(&(stream->request_data[stream->request_data_size]), at, real_length);
+  	stream->request_data_size += real_length;
   }
   return 0;
 }
@@ -198,17 +221,12 @@ int on_request_body(http_parser* _, const char* at, size_t length) {
 int on_response_body(http_parser* _, const char* at, size_t length) {
   _--;
   struct stream* stream = (struct stream*)_;
-  char *t;
-  if (RESPONSE_DATA_MAXSIZE > length) {
-  	memcpy(&(stream->response_data), at, length);
-  	stream->response_data[length] = '\0';
-	if (base64_output == 1) {
-		t = Base64Encode(stream->response_data, length);
-  		json_object_object_add(stream->json, "response_data", json_object_new_string(t));
-		free(t);
-	} else {
-  		json_object_object_add(stream->json, "response_data", json_object_new_string(stream->response_data));
-	}
+  int real_length;
+  if (RESPONSE_DATA_MAXSIZE > stream->response_data_size) {
+        real_length = RESPONSE_DATA_MAXSIZE > (stream->response_data_size + length) ? \
+		length : (RESPONSE_DATA_MAXSIZE - stream->response_data_size);
+  	memcpy(&(stream->response_data[stream->response_data_size]), at, real_length);
+  	stream->response_data_size += real_length;
   }
   return 0;
 }

@@ -65,7 +65,7 @@ int output(struct stream *s)
   if(s->is_http == 0)
     return 0;
   json_object_object_add(s->json, "time", json_object_new_int(tt));
-  json_object_object_add(s->json, "hc", json_object_new_int(s->tmp));
+  json_object_object_add(s->json, "request.hc", json_object_new_int(s->tmp));
 
   const char * tmp = json_object_to_json_string(s->json);
 
@@ -76,7 +76,7 @@ int output(struct stream *s)
             "$%u\r\n%s\r\n"
             "$%u\r\n%s\r\n"
             ,
-            (unsigned)strlen("sec_input_queue"), "sec_input_queue",
+            (unsigned)strlen(redis_key), redis_key,
             (unsigned)strlen(tmp), tmp
             );
 

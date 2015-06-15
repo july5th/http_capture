@@ -4,15 +4,19 @@ HTTP Capture
 Compilation
 ----------------------------
 First install libjson-c and libnids
-   
+
+   $ yum install make gcc-c++ json-c json-c-devel libnids libnids-devel libpcap libpcap-devel openssl openssl-devel
+
 Then compile:
 
    $ make
 
 Run:
 
-   $ ./http_capture -i eth1 -b -p
+   $ ./http_capture -i eth1 -Bbp
 
-Output example:
+   output: { "src": "172.0.0.1:8156", "dst": "172.0.0.1:80", "request.method": "POST", "request.url": "\/test.url", "request.host": "test.host.com", "request.x-forwarded-for": "172.0.0.1", "response.code": 200, "request.body": "{\"test_p1\":\"p1\",\"test_p2\":\"p2\"}", "response.body": "{\"responseCode\":\"0000\",\"responseMessage\":\"请求成功\"}", "time": 1434327902, "request.hc": 1 }
 
-{ "src": "10.10.40.60:39174", "dst": "220.181.112.244:80", "method": "POST", "url": "\/", "user-agent": "curl\/7.19.7 (x86_64-redhat-linux-gnu) libcurl\/7.19.7 NSS\/3.15.3 zlib\/1.2.3 libidn\/1.18 libssh2\/1.4.2", "host": "www.baidu.com", "data": "tkey=test", "code": 302, "time": 1414060183 }
+   $ ./http_capture -h
+ 
+   output: ......  

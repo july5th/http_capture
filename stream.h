@@ -19,7 +19,9 @@ struct stream {
 	char response_cache[REQUEST_HEADER_MAXSIZE + 1];
         //request post data
 	char request_data[REQUEST_DATA_MAXSIZE + 1];
+        int request_data_size;
 	char response_data[RESPONSE_DATA_MAXSIZE + 1];
+        int response_data_size;
 	struct tuple4 addr;
         int is_http;
         int tmp;

@@ -30,10 +30,12 @@ void usage(char *name) {
 		"	-b	catch request body\n"
 		"	-B	catch response body\n"
 		"	-r	use base64 format\n"
+		"	-k	set redis key prefix, default: sec\n"
 		"	-d	run as dameo\n"
 		"	-p	print ouput to screen instead of redis\n"
 		"\n"
 		"	-v	verbose - additional v increase output further\n"
+		"	-t	test - test/debug mode, don't decode url\n"
 		"	-q	quiet - additional q decrease output further\n"
 		"	-h	this help page\n"
 		"\n"
@@ -69,14 +71,16 @@ int main(int argc, char **argv) {
 	int run_mode = MODE_DEVICE;
 	int daemon = 0;
 	debug = 1;
+	test = 0;
 	catch_request_body = 0;
 	redis_output = 1;
 	base64_output = 0;
 	print_all_request_header = 0;
+	strcpy(redis_key, "sec_input_queue");
 
         int result;
         int arg_options;
-        const char *short_options = "f:i:abBrdpvqh";
+        const char *short_options = "f:i:k:abBrdpvqht";
 	char filter_string[256] = " ";
 
         const struct option long_options[] = {
@@ -84,10 +88,12 @@ int main(int argc, char **argv) {
                 {"interface", required_argument, NULL, 'i'},
                 {"print-request-body", required_argument, NULL, 'b'},
                 {"print-response-body", required_argument, NULL, 'B'},
+                {"redis-key", required_argument, NULL, 'k'},
                 {"dameo", required_argument, NULL, 'd'},
                 {"print", required_argument, NULL, 'p'},
                 {"verbose", required_argument, NULL, 'v'},
                 {"quite", required_argument, NULL, 'q'},
+                {"test", required_argument, NULL, 't'},
                 {"help", no_argument, NULL, 'h'},
                 {NULL, 0, NULL, 0}
         };
@@ -104,6 +110,9 @@ int main(int argc, char **argv) {
                 case 'i':
 			strcpy(device_or_pcap_name, optarg);
 			run_mode = MODE_DEVICE;
+                        break;
+                case 'k':
+			strcpy(redis_key, optarg);
                         break;
                 case 'a':
 			print_all_request_header = 1;
@@ -125,6 +134,9 @@ int main(int argc, char **argv) {
                         break;
                 case 'v':
                         debug++;
+                        break;
+                case 't':
+                        test = 1;
                         break;
                 case 'q':
                         if (debug > 0) debug--;;

@@ -21,6 +21,7 @@
 
 /* global settings defined at runtime */
 int debug;			/* debugging level */
+int test;			/* test mode */
 
 int catch_request_body;
 int catch_response_body;
@@ -28,7 +29,12 @@ int redis_output;
 int base64_output;
 int print_all_request_header;
 
-#define REDIS_HOST "172.17.81.123"
+//int all_send_data;
+//int start_time;
+
+char redis_key[256];
+
+#define REDIS_HOST "127.0.0.1"
 #define REDIS_PORT 6379
 
 #endif
