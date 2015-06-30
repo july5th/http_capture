@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <nids.h>
-#include <json/json.h>
+#include <json-c/json.h>
 
 #include "config.h"
 #include "http_parser.h"

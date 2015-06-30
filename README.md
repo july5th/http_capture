@@ -5,7 +5,7 @@ Compilation
 ----------------------------
 First install libjson-c and libnids
 
-   $ yum install make gcc-c++ json-c json-c-devel libnids libnids-devel libpcap libpcap-devel openssl openssl-devel
+   $ sudo apt-get install gcc-c++ json-c json-c-devel libnids libnids-devel libpcap libpcap-devel openssl openssl-devel
 
 Then compile:
 
